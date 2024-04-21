@@ -1,7 +1,13 @@
+require("dotenv").config();
+
+const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
+
 const { graphqlHTTP } = require("express-graphql");
 const { buildSchema } = require("graphql");
+
+const Event = require("./models/event");
 
 const app = express();
 
@@ -43,23 +49,47 @@ app.use(
     `),
     rootValue: {
       events: () => {
+        return Event.find()
+          .then((events) => {
+            return events.map((event) => {
+              return { ...event._doc };
+            });
+          })
+          .catch((err) => {
+            throw err;
+          });
         return events;
       },
-      createEvent: (args) => {
-        const event = {
-          _id: Math.random().toString(),
-          title: args.eventInput.title,
-          description: args.eventInput.description,
-          price: +args.eventInput.price,
-          date: new Date().toISOString(),
-        };
-        console.log(args);
-        events.push(event);
-        return event;
+      createEvent: ({ eventInput }) => {
+        const event = new Event({
+          title: eventInput.title,
+          description: eventInput.description,
+          price: +eventInput.price,
+          date: new Date(eventInput.date),
+        });
+        return event
+          .save()
+          .then((result) => {
+            console.log(result);
+            return { ...result._doc };
+          })
+          .catch((err) => {
+            console.log(err);
+            throw err;
+          });
       },
     },
     graphiql: true,
   })
 );
 
-app.listen(8000);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    app.listen(process.env.PORT, (req, res) => {
+      console.log(`Running on port ${process.env.PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.log("Error ==>>", err);
+  });
