@@ -35,6 +35,7 @@ app.use(
           _id: ID!
           email: String!
           password: String
+          createdEvents: [Event!]
         }
 
         type Event {
@@ -43,6 +44,7 @@ app.use(
             description: String!
             price: Float!
             date: String!
+            creator: User!
         }
 
         type RootQuery {
@@ -78,20 +80,21 @@ app.use(
           description: eventInput.description,
           price: +eventInput.price,
           date: new Date(eventInput.date),
-            creator: ''
+            creator: '66255a9731febab51d16c426'
         });
         let createdEvent;
         return event
           .save()
           .then((result) => {
+              console.log('Result ==>>', result)
               createdEvent = { ...result._doc }
-              return User.findById('662517a5eb6ed701d997f6d8')
+              return User.findById('66255a9731febab51d16c426')
           })
             .then(user => {
-                if (user) {
-                    throw new Error('User already exists!')
+                if (!user) {
+                    throw new Error('User not found!')
                 }
-                user.createdEvent.push(event)
+                user.createdEvents.push(event)
                 return user.save();
             })
             .then(result => {
@@ -104,8 +107,8 @@ app.use(
       },
       createUser: ({ userInput }) => {
           return User.findOne({ email: userInput.email}).then(user => {
-              if (!user) {
-                  throw new Error('User not found!')
+              if (user) {
+                  throw new Error('User already exist!')
               }
               return bcrypt
                   .hash(userInput.password, 12)
