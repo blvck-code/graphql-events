@@ -10,6 +10,7 @@ const { buildSchema } = require("graphql");
 
 const Event = require("./models/event");
 const User = require("./models/user");
+const schema = require("./schema"); // Import the schema from schema.js
 
 const app = express();
 
@@ -18,49 +19,7 @@ app.use(bodyParser.json());
 app.use(
   "/graphql",
   graphqlHTTP({
-    schema: buildSchema(`
-        input EventInput {
-            title: String!
-            description: String!
-            price: Float!
-            date: String!
-        }
-
-        input UserInput {
-          email: String!
-          password: String!
-        }
-
-        type User {
-          _id: ID!
-          email: String!
-          password: String
-          createdEvents: [Event!]
-        }
-
-        type Event {
-            _id: ID!
-            title: String!
-            description: String!
-            price: Float!
-            date: String!
-            creator: User!
-        }
-
-        type RootQuery {
-            events: [Event!]!
-        }
-
-        type RootMutation {
-            createEvent(eventInput: EventInput): Event
-            createUser(userInput: UserInput): User
-        }
-
-        schema {
-            query: RootQuery
-            mutation: RootMutation
-        }
-    `),
+    schema: schema,
     rootValue: {
       events: () => {
         return Event.find()
@@ -80,38 +39,36 @@ app.use(
           description: eventInput.description,
           price: +eventInput.price,
           date: new Date(eventInput.date),
-            creator: '66255a9731febab51d16c426'
+          creator: "66255a9731febab51d16c426",
         });
         let createdEvent;
         return event
           .save()
           .then((result) => {
-              console.log('Result ==>>', result)
-              createdEvent = { ...result._doc }
-              return User.findById('66255a9731febab51d16c426')
+            createdEvent = { ...result._doc };
+            return User.findById("66255a9731febab51d16c426");
           })
-            .then(user => {
-                if (!user) {
-                    throw new Error('User not found!')
-                }
-                user.createdEvents.push(event)
-                return user.save();
-            })
-            .then(result => {
-                return createdEvent;
-            })
+          .then((user) => {
+            if (!user) {
+              throw new Error("User not found!");
+            }
+            user.createdEvents.push(event);
+            return user.save();
+          })
+          .then((result) => {
+            return createdEvent;
+          })
           .catch((err) => {
-            console.log(err);
             throw err;
           });
       },
       createUser: ({ userInput }) => {
-          return User.findOne({ email: userInput.email}).then(user => {
-              if (user) {
-                  throw new Error('User already exist!')
-              }
-              return bcrypt
-                  .hash(userInput.password, 12)
+        return User.findOne({ email: userInput.email })
+          .then((user) => {
+            if (user) {
+              throw new Error("User already exist!");
+            }
+            return bcrypt.hash(userInput.password, 12);
           })
           .then((hashedPass) => {
             const user = new User({
