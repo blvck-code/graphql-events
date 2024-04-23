@@ -12,6 +12,14 @@ module.exports = buildSchema(`
         email: String!
         password: String!
     }
+    
+    type Booking {
+        _id: ID!
+        event: Event!
+        user: User!
+        created_at: String!
+        updated_at: String!
+    }
 
     type User {
         _id: ID!
@@ -36,6 +44,8 @@ module.exports = buildSchema(`
     type RootMutation {
         createEvent(eventInput: EventInput): Event
         createUser(userInput: UserInput): User
+        bookEvent(eventId: ID!): Booking!
+        cancelBooking(bookingId: ID!): Event!
     }
 
     schema {
